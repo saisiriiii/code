@@ -1,31 +1,137 @@
-# code
+# firebase_flutter
 
-A new Flutter project.
+Flutter Firebase NoSQL : Croissants
 
-## Getting Started
+## Developer
 
-FlutterFlow projects are built to run on the Flutter _stable_ release.
+Sirikamon Puttarat 62020730
 
-### IMPORTANT:
+## System
 
-For projects with Firestore integration, you must first run the following commands to ensure the project compiles:
+- Croissants Application.
+- Croissant is the best bread ever !
+- Premium French Croissant !
 
+### Order
+
+[![245034928-580621302990443-847836089623680680-n.jpg](https://i.postimg.cc/8knGLjLq/245034928-580621302990443-847836089623680680-n.jpg)](https://postimg.cc/c6YPS19m)
+
+- หน้าจอหลัก ขายครัวซอง
+- แสดงข้อมูลรายละเอียดของสินค้า
+- แสดงชื่อเมนูของครัวซอง
+- แสดงราคาของครัวซองแต่ละเมนู
+
+### Sold Out
+
+[![245090266-1030718941097166-3275938168215394-n.jpg](https://i.postimg.cc/RZ635kLD/245090266-1030718941097166-3275938168215394-n.jpg)](https://postimg.cc/LJS4j07t)
+
+- ครัวซองขายหมดแล้ว
+- จะแสดง ' Sold Out Croissants '
+
+### Cloud Firestore
+
+[![245851782-896813327610221-2297258345555869679-n.png](https://i.postimg.cc/BvtcL7sW/245851782-896813327610221-2297258345555869679-n.png)](https://postimg.cc/LqKZGTnv)
+
+- เก็บ อัพเดท แก้ไข ลบ Data ใน Firebase
+- เมนูครัวซองมี รหัส ชื่อ ราคา ของสินค้า
+
+### Model
+
+```dart
+//ใช้เพื่อกำหนดเค้าโครงข้อมูลของสินค้า ซึ่งใช้เก็บข้อมูลที่ได้มาจากฐานข้อมูล และถูกนำมาใช้ในการแสดงผล
+class ProductModel {
+  String id; //เก็บรหัสสินค้า
+  String croissant; //เก็บชื่อสินค้า คือ ชื่อเมนูครัวซองแต่ละประเภท
+  int price; //ราคาสินค้า
+  ProductModel({
+    required this.id,
+    required this.croissant,
+    required this.price,
+  });
+  factory ProductModel.fromMap(Map<String, dynamic>? product) {
+    //factory นำหน้า แสดงว่าภายใน constructor จะต้อง return ค่ากลับมา เป็น object ของ class ProductModel
+    //ใส่ ? เเทนการเขียนโค้ด if (product == null) {return null;}
+    String id = product?['id'];
+    //ข้อมูล id เก็บค่าที่ได้มาจากฟิลด์ id ของฐานข้อมูล
+    String croissant = product?['croissant'];
+    //ข้อมูล croissant เก็บค่าที่ได้มาจากฟิลด์ croissant ของฐานข้อมูล
+    int price = product?['price'];
+    //ข้อมูล price เก็บค่าที่ได้มาจากฟิลด์ price ของฐานข้อมูล
+    return ProductModel(id: id, croissant: croissant, price: price);
+  }
+  Map<String, dynamic> toMap() {
+    //สร้างเพื่อเเปลง property ภายใน object ให้เป็น Map<String, dynamic> ซึ่งเป็นประเภทข้อมูลที่เหมาะสำหรับ Cloud Firestore
+    return {
+      'id': id,
+      'croissant': croissant,
+      'price': price,
+    };
+  }
+}
 ```
-flutter pub get
-flutter packages pub run build_runner build --delete-conflicting-outputs
+
+### Service
+
+```dart
+//ใช้เพื่อติดต่อและจัดการข้อมูลไปยังฐานข้อมูลไปยังฐานข้อมูล Cloud Firestore
+//การอัพเดทข้อมูลสินค้า
+class Database {
+  static Database instance = Database._();
+  Database._();
+  Stream<List<ProductModel>> getAllProductStream() {
+    //เลือกใช้ stream เพื่อดูข้อมูลได้ แบบ real time
+    print('getall');
+    final reference = FirebaseFirestore.instance.collection('Croissants'); //หัวข้อหลัก
+    final query = reference.orderBy('price',
+        descending: false); //เป็นตัวที่เอาไว้เรียงลำดับ จากน้อยไปมาก
+    final snapshots = query.snapshots();
+    //QuerySnapshot<Map<String, dynamic>> snapshot
+    //QuerySnapshot<Object?> snapshot
+    return snapshots.map((snapshot) {
+      return snapshot.docs.map((doc) {
+        return ProductModel.fromMap(doc.data());
+      }).toList();
+    });
+  }
+}
 ```
 
-This command creates the generated files that parse each Record from Firestore into a schema object.
+### Screan
 
-### Getting started continued:
+```dart
+class ProductLists extends StatelessWidget {
+  const ProductLists({Key? key}) : super(key: key);
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
-
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+  @override
+  Widget build(BuildContext context) {
+    Database db = Database.instance;
+    Stream<List<ProductModel>> stream = db.getAllProductStream();
+    return Container(
+      padding: EdgeInsets.only(top: 10),
+      child: StreamBuilder<List<ProductModel>>(
+        stream: stream,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            //เช็คว่ามีข้อมูลไหมใน firebase ไหม
+            if (snapshot.data?.length == 0) {
+              //มีสมาชิกข้างใน firebase ไหม
+              return Center(
+                child: Text('Sold Out Croissants'), //แสดงเมื่อ ไม่มี
+              );
+            }
+            return ListView.builder(
+              itemCount: snapshot.data?.length,
+              itemBuilder: (context, index) {
+                return ProductItem(
+                  product: snapshot.data![index],
+                );
+              },
+            );
+          }
+          return Center(child: CircularProgressIndicator());
+        },
+      ),
+    );
+  }
+}
+```
