@@ -1,10 +1,13 @@
-# firebase_flutter
+# Final Project
 
-Flutter Firebase NoSQL : Croissants
+Application : Croissants
 
 ## Developer
 
-Sirikamon Puttarat 62020730
+1. นางสาวกัญชนากานต์ ดอนพรม 62020482
+2. นายณัฐภณ ชอบธรรมดี 62020617
+3. นางสาวศิริกมล พุทธรัตน์ 62020730
+4. นายสิรวิชญ์ อินทสิทธิ์ 62020763
 
 ## System
 
